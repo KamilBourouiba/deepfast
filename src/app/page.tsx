@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import jsPDF from 'jspdf'
 
 // TypeScript interfaces
 interface SearchResult {
@@ -396,19 +398,80 @@ Please generate a comprehensive research report based on these specifically sele
     }
   }
 
-  // Download report
-  const downloadReport = () => {
+  // Download report as PDF
+  const downloadReport = async () => {
     if (!generatedReport) return
 
-    const blob = new Blob([generatedReport], { type: 'text/plain' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `DeepFastSearch_Report_${new Date().toISOString().split('T')[0]}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
+    try {
+      const doc = new jsPDF()
+      
+      // Configuration PDF
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const pageHeight = doc.internal.pageSize.getHeight()
+      const margin = 20
+      const maxLineWidth = pageWidth - (margin * 2)
+      
+      // Fonction pour ajouter du texte avec gestion des retours à la ligne
+      const addText = (text: string, startY: number): number => {
+        const lines = doc.splitTextToSize(text, maxLineWidth)
+        const lineHeight = 6
+        let currentY = startY
+        
+        lines.forEach((line: string) => {
+          if (currentY > pageHeight - margin) {
+            doc.addPage()
+            currentY = margin
+          }
+          doc.text(line, margin, currentY)
+          currentY += lineHeight
+        })
+        
+        return currentY
+      }
+      
+      // Titre du rapport
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      let currentY = addText('DeepFastSearch Research Report', margin)
+      currentY += 10
+      
+      // Date
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      currentY = addText(`Generated: ${new Date().toLocaleDateString()}`, currentY)
+      currentY += 10
+      
+      // Contenu du rapport
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'normal')
+      
+      // Convertir le Markdown en texte simple pour PDF
+      const cleanText = generatedReport
+        .replace(/#{1,6}\s+/g, '') // Supprimer les # des titres
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Supprimer le bold markdown
+        .replace(/\*(.*?)\*/g, '$1') // Supprimer l'italic markdown
+        .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Convertir les liens
+        .replace(/```[\s\S]*?```/g, '[Code Block]') // Remplacer les blocs de code
+        .replace(/`(.*?)`/g, '$1') // Supprimer les backticks
+      
+      addText(cleanText, currentY)
+      
+      // Télécharger le PDF
+      doc.save(`DeepFastSearch_Report_${new Date().toISOString().split('T')[0]}.pdf`)
+    } catch (error) {
+      console.error('Failed to generate PDF:', error)
+      
+      // Fallback : téléchargement en texte
+      const blob = new Blob([generatedReport], { type: 'text/plain' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `DeepFastSearch_Report_${new Date().toISOString().split('T')[0]}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    }
   }
 
   if (!mounted) {
@@ -433,7 +496,28 @@ Please generate a comprehensive research report based on these specifically sele
                   onClick={downloadReport}
                   className="flex items-center gap-3 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
                 >
-                  Download
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => {
+                    const blob = new Blob([generatedReport], { type: 'text/plain' })
+                    const url = window.URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `DeepFastSearch_Report_${new Date().toISOString().split('T')[0]}.txt`
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                    window.URL.revokeObjectURL(url)
+                  }}
+                  className="flex items-center gap-3 px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Download TXT
                 </button>
                 <button
                   onClick={() => setShowReport(false)}
@@ -443,8 +527,31 @@ Please generate a comprehensive research report based on these specifically sele
                 </button>
               </div>
             </div>
-            <div className="prose max-w-none text-gray-800 whitespace-pre-wrap font-light leading-relaxed">
-              {generatedReport}
+            <div className="bg-white rounded-xl p-8 prose prose-lg max-w-none">
+              <ReactMarkdown 
+                components={{
+                  h1: ({children}) => <h1 className="text-3xl font-bold text-gray-900 mb-6 mt-8 first:mt-0 border-b border-gray-200 pb-2">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-6">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-xl font-medium text-gray-800 mb-3 mt-5">{children}</h3>,
+                  h4: ({children}) => <h4 className="text-lg font-medium text-gray-700 mb-2 mt-4">{children}</h4>,
+                  p: ({children}) => <p className="text-gray-700 mb-4 leading-relaxed">{children}</p>,
+                  ul: ({children}) => <ul className="text-gray-700 mb-4 pl-6 space-y-1">{children}</ul>,
+                  ol: ({children}) => <ol className="text-gray-700 mb-4 pl-6 space-y-1">{children}</ol>,
+                  li: ({children}) => <li className="list-disc list-inside">{children}</li>,
+                  blockquote: ({children}) => <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4">{children}</blockquote>,
+                  code: ({children}) => <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">{children}</code>,
+                  pre: ({children}) => <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-4">{children}</pre>,
+                  a: ({href, children}) => <a href={href} className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                  strong: ({children}) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                  em: ({children}) => <em className="italic text-gray-800">{children}</em>,
+                  hr: () => <hr className="border-gray-300 my-8" />,
+                  table: ({children}) => <table className="min-w-full border-collapse border border-gray-300 my-4">{children}</table>,
+                  th: ({children}) => <th className="border border-gray-300 px-4 py-2 bg-gray-100 font-semibold text-left">{children}</th>,
+                  td: ({children}) => <td className="border border-gray-300 px-4 py-2">{children}</td>,
+                }}
+              >
+                {generatedReport}
+              </ReactMarkdown>
             </div>
           </div>
         </div>
