@@ -108,7 +108,7 @@ export default function Home() {
         body: JSON.stringify({
           userQuery: userQuery,
           systemPrompt: searchPrompt,
-          maxTokens: 200
+          maxTokens: 2000
         })
       })
 
