@@ -1,17 +1,63 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+
+// TypeScript interfaces
+interface SearchResult {
+  data: {
+    title: string
+    link: string
+    snippet: string
+    displayLink: string
+    formattedUrl?: string
+    cacheId?: string
+  }
+  selected: boolean
+  id: string
+}
+
+interface GoogleSearchItem {
+  title: string
+  link: string
+  snippet: string
+  displayLink: string
+  formattedUrl?: string
+  cacheId?: string
+}
+
+interface SearchResults {
+  originalQuery: string
+  dorkQuery: string
+  items: SearchResult[]
+  totalResults: string
+  searchTime: string
+}
+
+interface UserDocument {
+  id: number
+  name: string
+  size: string
+  file: File
+  selected: boolean
+}
+
+interface UserSource {
+  id: number
+  url: string
+  title: string
+  selected: boolean
+}
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [query, setQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
-  const [searchResults, setSearchResults] = useState(null)
-  const [selectedResults, setSelectedResults] = useState([])
-  const [userDocuments, setUserDocuments] = useState([])
-  const [userSources, setUserSources] = useState([])
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null)
+  const [selectedResults, setSelectedResults] = useState<SearchResult[]>([])
+  const [userDocuments, setUserDocuments] = useState<UserDocument[]>([])
+  const [userSources, setUserSources] = useState<UserSource[]>([])
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
-  const [generatedReport, setGeneratedReport] = useState(null)
+  const [generatedReport, setGeneratedReport] = useState<string | null>(null)
   const [showReport, setShowReport] = useState(false)
   const [maxResults, setMaxResults] = useState(10) // Changed default to 10
 
@@ -19,34 +65,36 @@ export default function Home() {
     setMounted(true)
   }, [])
 
-  // Load prompts
-  const loadSearchPrompt = async () => {
+  // Load search prompt
+  const loadSearchPrompt = async (): Promise<string> => {
     try {
       const response = await fetch('/SearchPrompt.txt')
+      if (!response.ok) {
+        throw new Error('Failed to load search prompt')
+      }
       return await response.text()
     } catch (error) {
-      console.error('Failed to load search prompt:', error)
-      return `Convert the user's natural language query into an effective Google Dork search query. 
-Use appropriate operators like filetype:, site:, inurl:, intitle:, intext:, etc. 
-Focus on finding the most relevant results for their intent.
-Return only the Google Dork query, nothing else.`
+      console.error('Error loading search prompt:', error)
+      return 'Transform this query into an effective Google search query using advanced search operators when appropriate.'
     }
   }
 
-  const loadReportPrompt = async () => {
+  // Load report prompt
+  const loadReportPrompt = async (): Promise<string> => {
     try {
       const response = await fetch('/ReportPrompt.txt')
+      if (!response.ok) {
+        throw new Error('Failed to load report prompt')
+      }
       return await response.text()
     } catch (error) {
-      console.error('Failed to load report prompt:', error)
-      return `Generate a detailed research report based on the search results provided. 
-Include an executive summary, methodology, findings, analysis, and conclusions. 
-Format the report professionally with clear sections and headings.`
+      console.error('Error loading report prompt:', error)
+      return 'Generate a comprehensive research report based on the provided sources and documents.'
     }
   }
 
   // Claude API call via Next.js API route
-  const transformQueryToDork = async (userQuery) => {
+  const transformQueryToDork = async (userQuery: string): Promise<string> => {
     try {
       const searchPrompt = await loadSearchPrompt()
 
@@ -76,7 +124,7 @@ Format the report professionally with clear sections and headings.`
   }
 
   // Google Search API call (modified to handle pagination for more results)
-  const searchGoogle = async (dorkQuery) => {
+  const searchGoogle = async (dorkQuery: string): Promise<{ items: SearchResult[], searchInformation: { totalResults: string } }> => {
     try {
       const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY
       const GOOGLE_CX = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID
@@ -88,7 +136,7 @@ Format the report professionally with clear sections and headings.`
         throw new Error('Google Custom Search Engine ID not configured. Please set NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID in .env.local')
       }
 
-      const allResults = []
+      const allResults: SearchResult[] = []
       const resultsPerPage = 10 // API limit
       const totalPages = Math.ceil(maxResults / resultsPerPage)
       
@@ -117,8 +165,15 @@ Format the report professionally with clear sections and headings.`
         const data = await response.json()
         
         if (data.items && data.items.length > 0) {
-          allResults.push(...data.items.map(item => ({ 
-            data: item, 
+          allResults.push(...data.items.map((item: GoogleSearchItem): SearchResult => ({ 
+            data: {
+              title: item.title || '',
+              link: item.link || '',
+              snippet: item.snippet || '',
+              displayLink: item.displayLink || '',
+              formattedUrl: item.formattedUrl,
+              cacheId: item.cacheId
+            },
             selected: false,
             id: `${startIndex}-${item.cacheId || Math.random()}`
           })))
@@ -161,48 +216,49 @@ Format the report professionally with clear sections and headings.`
       })
     } catch (error) {
       console.error('Search failed:', error)
-      alert('Search failed: ' + error.message)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert('Search failed: ' + errorMessage)
     } finally {
       setIsSearching(false)
     }
   }
 
   // Toggle result selection
-  const toggleResult = (resultIndex, isSelected) => {
+  const toggleResult = (resultIndex: number, isSelected: boolean) => {
     setSearchResults(prev => ({
-      ...prev,
-      items: prev.items.map((item, index) => 
+      ...prev!,
+      items: prev!.items.map((item, index) => 
         index === resultIndex ? { ...item, selected: isSelected } : item
       )
     }))
     
     if (isSelected) {
-      setSelectedResults(prev => [...prev, searchResults.items[resultIndex]])
+      setSelectedResults(prev => [...prev, searchResults!.items[resultIndex]])
     } else {
-      setSelectedResults(prev => prev.filter(r => r.id !== searchResults.items[resultIndex].id))
+      setSelectedResults(prev => prev.filter(r => r.id !== searchResults!.items[resultIndex].id))
     }
   }
 
   // Select all results
-  const selectAllResults = (selectAll) => {
+  const selectAllResults = (selectAll: boolean) => {
     setSearchResults(prev => ({
-      ...prev,
-      items: prev.items.map(item => ({ ...item, selected: selectAll }))
+      ...prev!,
+      items: prev!.items.map(item => ({ ...item, selected: selectAll }))
     }))
     
     if (selectAll) {
-      setSelectedResults([...searchResults.items])
+      setSelectedResults([...searchResults!.items])
     } else {
       setSelectedResults([])
     }
   }
 
-  // Handle user document upload
-  const handleUserDocuments = (files) => {
+  // Handle user document uploads
+  const handleUserDocuments = (files: FileList | null) => {
     if (!files) return
-
-    const newDocs = Array.from(files).map(file => ({
-      id: Date.now() + Math.random(),
+    
+    const newDocs: UserDocument[] = Array.from(files).map(file => ({
+      id: Date.now() + Math.floor(Math.random() * 1000),
       name: file.name,
       size: formatFileSize(file.size),
       file: file,
@@ -213,23 +269,23 @@ Format the report professionally with clear sections and headings.`
   }
 
   // Toggle user document selection
-  const toggleUserDoc = (docId, isSelected) => {
+  const toggleUserDoc = (docId: number, isSelected: boolean) => {
     setUserDocuments(userDocuments.map(doc => 
       doc.id === docId ? { ...doc, selected: isSelected } : doc
     ))
   }
 
   // Remove user document
-  const removeUserDoc = (docId) => {
+  const removeUserDoc = (docId: number) => {
     setUserDocuments(userDocuments.filter(d => d.id !== docId))
   }
 
   // Handle user source URLs
-  const addUserSource = (url, title = '') => {
+  const addUserSource = (url: string, title: string = '') => {
     if (!url.trim()) return
     
-    const newSource = {
-      id: Date.now() + Math.random(),
+    const newSource: UserSource = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
       url: url.trim(),
       title: title.trim() || url.trim(),
       selected: true
@@ -239,19 +295,19 @@ Format the report professionally with clear sections and headings.`
   }
 
   // Toggle user source selection
-  const toggleUserSource = (sourceId, isSelected) => {
+  const toggleUserSource = (sourceId: number, isSelected: boolean) => {
     setUserSources(userSources.map(source => 
       source.id === sourceId ? { ...source, selected: isSelected } : source
     ))
   }
 
   // Remove user source
-  const removeUserSource = (sourceId) => {
+  const removeUserSource = (sourceId: number) => {
     setUserSources(userSources.filter(s => s.id !== sourceId))
   }
 
   // Format file size
-  const formatFileSize = (bytes) => {
+  const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
@@ -284,8 +340,8 @@ Format the report professionally with clear sections and headings.`
 
       const reportInput = `
 RESEARCH REPORT REQUEST:
-- Original Query: "${searchResults.originalQuery}"
-- Google Dork Used: "${searchResults.dorkQuery}"
+- Original Query: "${searchResults!.originalQuery}"
+- Google Dork Used: "${searchResults!.dorkQuery}"
 - Report Generation Time: ${new Date().toISOString()}
 
 SELECTED WEB SOURCES (${selectedResults.length} items):
@@ -333,7 +389,8 @@ Please generate a comprehensive research report based on these specifically sele
       setShowReport(true)
     } catch (error) {
       console.error('Report generation failed:', error)
-      alert('Report generation failed: ' + error.message)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert('Report generation failed: ' + errorMessage)
     } finally {
       setIsGeneratingReport(false)
     }
