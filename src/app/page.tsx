@@ -523,27 +523,6 @@ Please generate a comprehensive research report based on these specifically sele
             <h3 className="text-3xl font-light text-gray-900 mb-6">
               Found {searchResults.items.length} results - Select documents for your report
             </h3>
-            
-            {/* Search Info */}
-            <div className="bg-white border border-gray-300 border-l-4 border-l-gray-900 p-6 rounded-xl mb-8">
-              <p className="text-gray-800 mb-4 font-light text-lg">
-                Query: &ldquo;<em>{searchResults.originalQuery}</em>&rdquo; → Google Dork: <code className="bg-gray-100 px-3 py-1 rounded-lg text-sm font-mono">{searchResults.dorkQuery}</code>
-              </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => selectAllResults(true)}
-                  className="px-6 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 transition-colors"
-                >
-                  Select All
-                </button>
-                <button
-                  onClick={() => selectAllResults(false)}
-                  className="px-6 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 transition-colors"
-                >
-                  Deselect All
-                </button>
-              </div>
-            </div>
 
             {/* Add Sources Section - Moved to top */}
             <div className="bg-white border border-gray-300 rounded-xl p-8 mb-8">
@@ -669,8 +648,23 @@ Please generate a comprehensive research report based on these specifically sele
               </div>
             </div>
 
-            {/* Generate Report Button - Moved to top */}
+            {/* Generate Report Button with Select All controls */}
             <div className="text-center mb-8">
+              <div className="flex justify-center gap-4 mb-4">
+                <button
+                  onClick={() => selectAllResults(true)}
+                  className="px-6 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 transition-colors"
+                >
+                  Select All Results
+                </button>
+                <button
+                  onClick={() => selectAllResults(false)}
+                  className="px-6 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 transition-colors"
+                >
+                  Deselect All Results
+                </button>
+              </div>
+              
               <button
                 onClick={handleGenerateReport}
                 disabled={totalSelected === 0 || isGeneratingReport}
