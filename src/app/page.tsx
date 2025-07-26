@@ -834,7 +834,7 @@ Please generate a comprehensive research report based on these specifically sele
 
         {/* Footer */}
         <footer className="text-center mt-16 text-gray-500 text-sm font-light">
-          <p>&copy; 2024 DeepFastSearch. Intelligent search for your research.</p>
+          <p>&copy; 2025 DeepFastSearch By Kamil Bourouiba. Intelligent search for your research.</p>
         </footer>
       </div>
     </div>
