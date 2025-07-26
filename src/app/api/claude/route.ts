@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userQuery, systemPrompt, maxTokens = 200 } = await request.json()
+    const { userQuery, systemPrompt, maxTokens = 4000 } = await request.json()
 
     const CLAUDE_API_KEY = process.env.NEXT_PUBLIC_CLAUDE_API_KEY
     
