@@ -1,100 +1,109 @@
 
 ===========================
-MEGA PROMPT: GENERATING A REPORT FROM GOOGLE DORK SEARCH RESULTS
+MEGA PROMPT: GENERATING A SOURCE-CITED REPORT FROM GOOGLE DORK SEARCH RESULTS
 ===========================
 
 PURPOSE:
 --------
-To guide an AI assistant or system in creating a clear, professional report based on findings retrieved from Google Dork queries.
+To guide an AI assistant or system in building a fully structured, transparent, and professional report based on findings obtained through Google Dorking, with **ALL sources properly cited and hyperlinked**.
 
 GOAL:
 -----
-Transform raw search findings into a structured, readable, and actionable report suitable for research, auditing, intelligence gathering, or cybersecurity analysis.
+Turn Google Dork search results into a detailed report that emphasizes **source accountability**, includes **all URLs**, and enables readers to **verify every claim** through clickable references.
 
-STRUCTURE OF THE REPORT:
+MANDATORY REQUIREMENTS:
 ------------------------
+✔️ EVERY FINDING MUST BE ACCOMPANIED BY:
+- The **exact URL**
+- The **title of the page or file**
+- A **brief description**
+- A **retrieval/access date**
+- A **working hyperlink** included directly in the report body
+
+REPORT STRUCTURE:
+-----------------
 
 1. TITLE PAGE
    - Report Title
-   - Subtitle (if any)
-   - Author/Analyst
+   - Subtitle (optional)
+   - Author / Analyst Name or Organization
    - Date
 
 2. EXECUTIVE SUMMARY
-   - Concise overview of findings
-   - High-level conclusions
-   - Key risks or insights
+   - Overview of goals, methods, and top-level findings
+   - Critical risks or security highlights
 
 3. OBJECTIVE & SCOPE
-   - Purpose of the research
-   - What was searched (themes, keywords, dorks used)
-   - Scope limitations
+   - Why the research was performed
+   - What questions it aimed to answer
+   - Scope constraints and time frame
 
 4. METHODOLOGY
-   - Search engine used (Google via Dorking)
-   - Dork syntax and logic examples
-   - Search timeframe and filters
-   - Any excluded domains or refined parameters
+   - How Google Dorks were used
+   - Sample queries (with explanations)
+   - Search logic, filters, and parameters
+   - Tools used to collect, verify, and archive data
 
-5. FINDINGS
-   For each category or dork applied, include:
-   - ▶ Title of section
-   - Dork query used
-   - Summary of relevant results
-   - Links or snapshots of key findings
-   - Notes on source credibility or anomalies
+5. FINDINGS (GROUPED BY THEME)
+Each section must include:
 
-   Example Subsections:
-   - Exposed Files (.pdf/.xls/.env)
-   - Directory Listings
-   - Login/Admin Panels
-   - Credentials Leaks
-   - Live Devices
-   - Academic/Corporate Docs
+🔍 QUERY USED:
+`filetype:pdf site:gov "confidential"`
 
-6. ANALYSIS
-   - Interpretation of the findings
-   - Contextual implications (risks, patterns, red flags)
-   - If sensitive data was found, detail exposure vectors
-   - Compare to known vulnerabilities or compliance standards
-
-7. CONCLUSION
-   - Summary of critical insights
-   - Recommendations (remove files, secure directories, notify admins)
-   - Suggested follow-up searches or monitoring
-
-8. APPENDICES
-   - Full list of dork queries used
-   - Screenshots or archived links (if applicable)
-   - References or OSINT tools used
-
-TONE & STYLE:
--------------
-- Professional and objective
-- Clear formatting, headers, and bullet points
-- Avoid speculation; cite sources when possible
-
-EXAMPLE OUTPUT SNIPPET:
-------------------------
-
-🔍 DORK QUERY:
-`filetype:pdf site:gov "confidential budget"`
-
-📝 FINDING:
-- Document titled “FY2024 Confidential Budget Summary”
-- Located on a subdomain of state finance dept.
-- Link: https://finance.example.gov/budget-confidential.pdf
+📄 FINDING:
+- **Title**: FY2024 Confidential Budget Report
+- **URL**: [https://finance.example.gov/budget-confidential.pdf](https://finance.example.gov/budget-confidential.pdf)
+- **Accessed**: July 24, 2025
+- **Description**: A 42-page government budget document with restricted access wording in the footer, found through open directory indexing.
 
 📌 NOTES:
-- Document not listed on public-facing site menu
-- Contains detailed salary allocations
-- Metadata indicates last edit by internal user “j.doe”
+- Visibility: Publicly indexed on Google, not linked from parent page.
+- Metadata indicates last edited by “j.doe@gov.example”
+- Sensitive keywords: “salary structure”, “departmental allocation”
 
-📊 ANALYSIS:
-- Presence of keyword "confidential" in title confirms sensitivity
-- Accessible without authentication — security misconfiguration likely
-- May violate internal data exposure policies
+🧷 INCLUDE THE FULL CLICKABLE LINK IN THE REPORT.
+Readers must be able to verify every item directly.
+
+Repeat this format for all findings. Suggested categories:
+- 📄 Exposed Documents (PDFs, DOCs, EXCELs, ENV)
+- 📂 Open Directories
+- 🔐 Login/Control Panels
+- 📬 Credentials & Leaks
+- 🎥 Open Cameras or Devices
+- 🎓 Academic/Research Material
+- 🧠 Corporate/Competitive Intelligence
+
+6. ANALYSIS
+   - What do the findings mean?
+   - What risks, patterns, or compliance issues are present?
+   - Are there repeated vulnerabilities across domains?
+   - Link findings to frameworks (OWASP, ISO 27001, etc.)
+
+7. CONCLUSION
+   - Recap the key takeaways
+   - Recommend immediate and long-term actions
+   - List any critical alerts or follow-ups
+
+8. APPENDICES
+   - ✅ Full list of dork queries used
+   - 🔗 **Full clickable citation list**, APA or MLA style:
+     Example (APA):
+     Finance Department. (2025). *FY2024 Confidential Budget Report*. Retrieved July 24, 2025, from https://finance.example.gov/budget-confidential.pdf
+   - Screenshots (if appropriate)
+   - Archival tools or metadata extracts
+
+STYLE NOTES:
+------------
+- Always include hyperlinks inline and in full form
+- Use markdown or HTML anchors if supported
+- Don’t summarize findings without proof: **link or it didn’t happen**
+- Structure clearly with bold titles, bullet points, and timestamps
 
 DISCLAIMER:
 -----------
-Use this reporting format only for legal, ethical, or authorized research. Do not exploit or distribute sensitive data uncovered.
+This prompt supports only ethical and authorized intelligence work. Never use these methods to exploit or disclose non-public data unlawfully.
+
+AUTHOR:
+-------
+Generated by ChatGPT | July 2025
+https://openai.com
