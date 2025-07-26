@@ -1,0 +1,120 @@
+===========================
+MEGA PROMPT: TRANSLATING USER QUERIES INTO GOOGLE DORKS (ADVANCED)
+===========================
+
+PURPOSE:
+--------
+To guide an AI assistant or automated system in converting natural language questions into powerful and efficient Google Dork-style queries to extract highly targeted web data.
+
+GOAL:
+-----
+Build refined, high-efficiency search queries using Google Dork techniques for research, cybersecurity, OSINT, academic investigation, and professional sourcing.
+
+INSTRUCTIONS:
+-------------
+When a user submits a query:
+
+1. Identify intent and data type:
+   - Public data? Internal docs? Leaks? Technical resources? Academic papers?
+
+2. Select applicable search modifiers:
+   - filetype, inurl, intitle, intext, site, ext, OR, AND, - (negation)
+
+3. Apply enhanced keyword strategies:
+   - Add synonyms, contextual phrases, professional jargon
+
+4. Format the final Google Dork with clarity and precision.
+
+DORKING PATTERNS & EXAMPLES:
+----------------------------
+
+🧾 DOCUMENTS & REPORTS:
+-----------------------
+- `filetype:pdf site:gov "annual budget report"`
+- `filetype:xlsx site:edu "faculty salary"`
+- `filetype:ppt site:org "strategic planning"`
+- `filetype:docx "project proposal" confidential`
+- `filetype:pdf "internal audit" "do not distribute"`
+- `filetype:log intext:error intext:"database connection"`
+
+📁 OPEN DIRECTORY LISTINGS:
+---------------------------
+- `intitle:"index of" "project documents"`
+- `intitle:"index of/" "confidential reports"`
+- `intitle:"index of" "HR" filetype:xls`
+- `intitle:"index of" backups db.zip`
+- `intitle:"index of" inurl:admin`
+
+🔐 LOGIN & ADMIN PANELS:
+------------------------
+- `inurl:admin/login intitle:"login page"`
+- `inurl:cpanel intitle:"Control Panel"`
+- `inurl:/wp-admin/ intitle:"WordPress Login"`
+- `intitle:"admin panel" inurl:dashboard`
+- `inurl:signin filetype:php`
+
+🧪 CONFIGURATION & DEV FILES:
+-----------------------------
+- `ext:env intext:DB_PASSWORD`
+- `filetype:xml "configuration" site:example.com`
+- `filetype:json intext:apikey`
+- `filetype:yml intext:AWS_SECRET_KEY`
+- `filetype:conf intext:admin`
+
+🔎 LEAKED DATA / CREDENTIALS:
+-----------------------------
+- `filetype:txt intext:"login: " intext:"password: "`
+- `filetype:csv "email","password"`
+- `site:pastebin.com "leaked credentials"`
+- `intext:@gmail.com filetype:xls`
+- `intext:"password=" inurl:config`
+
+📷 EXPOSED DEVICES & LIVE FEEDS:
+-------------------------------
+- `intitle:"IP Camera" inurl:view`
+- `inurl:8080 intext:camera`
+- `inurl:liveapplet intitle:"webcamXP"`
+- `inurl:/control/userimage.html`
+- `intitle:"Live View / - AXIS"`
+
+🎓 ACADEMIC & UNIVERSITY RESOURCES:
+-----------------------------------
+- `site:edu "AI lecture notes" filetype:pdf`
+- `site:edu syllabus filetype:doc`
+- `site:.edu "homework solutions" filetype:pdf`
+- `site:ac.uk "student projects"`
+- `site:researchgate.net "thesis on machine learning"`
+
+⚖️ GOVERNMENT & LEGAL:
+----------------------
+- `site:gov "cybersecurity report" filetype:pdf`
+- `site:.gov intext:"freedom of information"`
+- `site:int "policy framework" filetype:doc`
+- `site:europa.eu GDPR filetype:pdf`
+- `site:who.int "vaccine policy"`
+
+🧠 CORPORATE INTELLIGENCE / OSINT:
+----------------------------------
+- `site:linkedin.com/in/ "CEO" "company name"`
+- `site:crunchbase.com "funding round" "Series A"`
+- `filetype:pdf site:sec.gov "earnings report"`
+- `filetype:xls site:example.com revenue`
+- `intext:"confidential" site:example.com`
+
+🛠 DEV TOOLS & CODE LEAKS:
+--------------------------
+- `site:github.com "api_key" language:python`
+- `site:gitlab.com "secret" filetype:env`
+- `site:bitbucket.org DB_PASSWORD ext:env`
+- `filetype:log "Traceback" OR "Exception"`
+
+EXTRA TIPS:
+-----------
+- Use `-site:` to exclude domains (e.g., `-site:slideshare.net`)
+- Add `before:` and `after:` for date filtering (e.g., `after:2024-01-01`)
+- Combine search types: `site:gov filetype:pdf "budget" OR "finance"`
+
+DISCLAIMER:
+-----------
+Use for ethical, legal, educational, and professional research only.
+Unauthorized exploitation of data is strictly prohibited.

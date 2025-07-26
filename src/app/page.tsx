@@ -1,103 +1,684 @@
-import Image from "next/image";
+'use client'
+
+import { useState, useEffect } from 'react'
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [mounted, setMounted] = useState(false)
+  const [query, setQuery] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState(null)
+  const [selectedResults, setSelectedResults] = useState([])
+  const [userDocuments, setUserDocuments] = useState([])
+  const [userSources, setUserSources] = useState([])
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
+  const [generatedReport, setGeneratedReport] = useState(null)
+  const [showReport, setShowReport] = useState(false)
+  const [maxResults, setMaxResults] = useState(10) // Changed default to 10
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Load prompts
+  const loadSearchPrompt = async () => {
+    try {
+      const response = await fetch('/SearchPrompt.txt')
+      return await response.text()
+    } catch (error) {
+      console.error('Failed to load search prompt:', error)
+      return `Convert the user's natural language query into an effective Google Dork search query. 
+Use appropriate operators like filetype:, site:, inurl:, intitle:, intext:, etc. 
+Focus on finding the most relevant results for their intent.
+Return only the Google Dork query, nothing else.`
+    }
+  }
+
+  const loadReportPrompt = async () => {
+    try {
+      const response = await fetch('/ReportPrompt.txt')
+      return await response.text()
+    } catch (error) {
+      console.error('Failed to load report prompt:', error)
+      return `Generate a detailed research report based on the search results provided. 
+Include an executive summary, methodology, findings, analysis, and conclusions. 
+Format the report professionally with clear sections and headings.`
+    }
+  }
+
+  // Claude API call via Next.js API route
+  const transformQueryToDork = async (userQuery) => {
+    try {
+      const searchPrompt = await loadSearchPrompt()
+
+      const response = await fetch('/api/claude', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userQuery: userQuery,
+          systemPrompt: searchPrompt,
+          maxTokens: 200
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data.content[0]?.text?.trim() || userQuery
+    } catch (error) {
+      console.error('Failed to transform query with Claude:', error)
+      return userQuery
+    }
+  }
+
+  // Google Search API call (modified to handle pagination for more results)
+  const searchGoogle = async (dorkQuery) => {
+    try {
+      const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY
+      const GOOGLE_CX = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID
+      
+      if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'your_google_search_api_key_here') {
+        throw new Error('Google Search API key not configured. Please set NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY in .env.local')
+      }
+      if (!GOOGLE_CX || GOOGLE_CX === 'your_google_custom_search_engine_id_here') {
+        throw new Error('Google Custom Search Engine ID not configured. Please set NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID in .env.local')
+      }
+
+      const allResults = []
+      const resultsPerPage = 10 // API limit
+      const totalPages = Math.ceil(maxResults / resultsPerPage)
+      
+      // Make multiple requests to get more results
+      for (let page = 0; page < totalPages; page++) {
+        const startIndex = (page * resultsPerPage) + 1
+        const numResults = Math.min(resultsPerPage, maxResults - (page * resultsPerPage))
+        
+        const response = await fetch('/api/google-search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: dorkQuery,
+            startIndex: startIndex,
+            num: numResults
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || `API error: ${response.status}`)
+        }
+
+        const data = await response.json()
+        
+        if (data.items && data.items.length > 0) {
+          allResults.push(...data.items.map(item => ({ 
+            data: item, 
+            selected: false,
+            id: `${startIndex}-${item.cacheId || Math.random()}`
+          })))
+        }
+        
+        // If we got fewer results than requested, no more pages available
+        if (!data.items || data.items.length < numResults) {
+          break
+        }
+      }
+
+      return {
+        items: allResults,
+        searchInformation: { totalResults: allResults.length.toString() }
+      }
+    } catch (error) {
+      console.error('Google search failed:', error)
+      throw error
+    }
+  }
+
+  // Handle search
+  const handleSearch = async () => {
+    if (!query.trim()) return
+
+    setIsSearching(true)
+    setSearchResults(null)
+    setSelectedResults([])
+
+    try {
+      const dorkQuery = await transformQueryToDork(query)
+      const results = await searchGoogle(dorkQuery)
+      
+      setSearchResults({
+        originalQuery: query,
+        dorkQuery: dorkQuery,
+        items: results.items,
+        totalResults: results.searchInformation.totalResults,
+        searchTime: '0.1'
+      })
+    } catch (error) {
+      console.error('Search failed:', error)
+      alert('Search failed: ' + error.message)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Toggle result selection
+  const toggleResult = (resultIndex, isSelected) => {
+    setSearchResults(prev => ({
+      ...prev,
+      items: prev.items.map((item, index) => 
+        index === resultIndex ? { ...item, selected: isSelected } : item
+      )
+    }))
+    
+    if (isSelected) {
+      setSelectedResults(prev => [...prev, searchResults.items[resultIndex]])
+    } else {
+      setSelectedResults(prev => prev.filter(r => r.id !== searchResults.items[resultIndex].id))
+    }
+  }
+
+  // Select all results
+  const selectAllResults = (selectAll) => {
+    setSearchResults(prev => ({
+      ...prev,
+      items: prev.items.map(item => ({ ...item, selected: selectAll }))
+    }))
+    
+    if (selectAll) {
+      setSelectedResults([...searchResults.items])
+    } else {
+      setSelectedResults([])
+    }
+  }
+
+  // Handle user document upload
+  const handleUserDocuments = (files) => {
+    if (!files) return
+
+    const newDocs = Array.from(files).map(file => ({
+      id: Date.now() + Math.random(),
+      name: file.name,
+      size: formatFileSize(file.size),
+      file: file,
+      selected: true
+    }))
+
+    setUserDocuments([...userDocuments, ...newDocs])
+  }
+
+  // Toggle user document selection
+  const toggleUserDoc = (docId, isSelected) => {
+    setUserDocuments(userDocuments.map(doc => 
+      doc.id === docId ? { ...doc, selected: isSelected } : doc
+    ))
+  }
+
+  // Remove user document
+  const removeUserDoc = (docId) => {
+    setUserDocuments(userDocuments.filter(d => d.id !== docId))
+  }
+
+  // Handle user source URLs
+  const addUserSource = (url, title = '') => {
+    if (!url.trim()) return
+    
+    const newSource = {
+      id: Date.now() + Math.random(),
+      url: url.trim(),
+      title: title.trim() || url.trim(),
+      selected: true
+    }
+
+    setUserSources([...userSources, newSource])
+  }
+
+  // Toggle user source selection
+  const toggleUserSource = (sourceId, isSelected) => {
+    setUserSources(userSources.map(source => 
+      source.id === sourceId ? { ...source, selected: isSelected } : source
+    ))
+  }
+
+  // Remove user source
+  const removeUserSource = (sourceId) => {
+    setUserSources(userSources.filter(s => s.id !== sourceId))
+  }
+
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  // Generate report (modified to use new format)
+  const handleGenerateReport = async () => {
+    const selectedCount = selectedResults.length
+    const selectedUserDocs = userDocuments.filter(d => d.selected !== false).length
+    const selectedUserSources = userSources.filter(s => s.selected !== false).length
+    const totalSelected = selectedCount + selectedUserDocs + selectedUserSources
+
+    if (totalSelected === 0) {
+      alert('Please select at least one item to generate a report.')
+      return
+    }
+
+    setIsGeneratingReport(true)
+
+    try {
+      const CLAUDE_API_KEY = process.env.NEXT_PUBLIC_CLAUDE_API_KEY
+      
+      if (!CLAUDE_API_KEY || CLAUDE_API_KEY === 'your_claude_api_key_here') {
+        throw new Error('Claude API key not configured.')
+      }
+
+      const reportPrompt = await loadReportPrompt()
+
+      const reportInput = `
+RESEARCH REPORT REQUEST:
+- Original Query: "${searchResults.originalQuery}"
+- Google Dork Used: "${searchResults.dorkQuery}"
+- Report Generation Time: ${new Date().toISOString()}
+
+SELECTED WEB SOURCES (${selectedResults.length} items):
+${selectedResults.map((result, index) => `
+${index + 1}. ${result.data.title}
+   URL: ${result.data.link}
+   Source: ${result.data.displayLink}
+   Snippet: ${result.data.snippet}
+`).join('\n')}
+
+ADDITIONAL USER DOCUMENTS (${userDocuments.filter(d => d.selected !== false).length} items):
+${userDocuments.filter(d => d.selected !== false).map((doc, index) => `
+${index + 1}. ${doc.name} (${doc.size})
+   Type: User-provided document
+`).join('\n')}
+
+ADDITIONAL USER SOURCES (${userSources.filter(s => s.selected !== false).length} items):
+${userSources.filter(s => s.selected !== false).map((source, index) => `
+${index + 1}. ${source.title}
+   URL: ${source.url}
+   Type: User-provided source
+`).join('\n')}
+
+Please generate a comprehensive research report based on these specifically selected sources and documents.
+        `
+
+      const response = await fetch('/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userQuery: reportInput,
+          systemPrompt: reportPrompt,
+          maxTokens: 4000
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const reportContent = data.content[0]?.text?.trim() || 'Failed to generate report'
+      setGeneratedReport(reportContent)
+      setShowReport(true)
+    } catch (error) {
+      console.error('Report generation failed:', error)
+      alert('Report generation failed: ' + error.message)
+    } finally {
+      setIsGeneratingReport(false)
+    }
+  }
+
+  // Download report
+  const downloadReport = () => {
+    if (!generatedReport) return
+
+    const blob = new Blob([generatedReport], { type: 'text/plain' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `DeepFastSearch_Report_${new Date().toISOString().split('T')[0]}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }
+
+  if (!mounted) {
+    return <div>Loading...</div>
+  }
+
+  const selectedCount = selectedResults.length
+  const selectedUserDocs = userDocuments.filter(d => d.selected !== false).length
+  const selectedUserSources = userSources.filter(s => s.selected !== false).length
+  const totalSelected = selectedCount + selectedUserDocs + selectedUserSources
+
+  // Show generated report
+  if (generatedReport && showReport) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-10 shadow-sm">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-3xl font-light text-gray-900">Generated Research Report</h3>
+              <div className="flex gap-4">
+                <button
+                  onClick={downloadReport}
+                  className="flex items-center gap-3 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
+                >
+                  Download
+                </button>
+                <button
+                  onClick={() => setShowReport(false)}
+                  className="px-6 py-3 bg-gray-200 text-gray-900 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Back to Results
+                </button>
+              </div>
+            </div>
+            <div className="prose max-w-none text-gray-800 whitespace-pre-wrap font-light leading-relaxed">
+              {generatedReport}
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header */}
+        <header className="text-center mb-12">
+          <h1 className="text-6xl font-light text-gray-900 mb-6 tracking-tight">
+            DeepFastSearch
+          </h1>
+          <p className="text-xl text-gray-600 font-light max-w-2xl mx-auto leading-relaxed">
+            AI-powered intelligent search for comprehensive research and analysis
+          </p>
+        </header>
+
+        {/* Search Interface */}
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-10 mb-10 shadow-sm">
+          {/* Search Settings */}
+          <div className="mb-6 text-center">
+            <label className="text-sm font-medium text-gray-700 mr-3">Max Results:</label>
+            <select 
+              value={maxResults} 
+              onChange={(e) => setMaxResults(parseInt(e.target.value))}
+              className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm"
+            >
+              <option value={10}>10 results</option>
+              <option value={20}>20 results</option>
+              <option value={30}>30 results</option>
+              <option value={50}>50 results</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Note: Plus de résultats = plus de requêtes API</p>
+          </div>
+
+          <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="flex gap-4 mb-6">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search the web with AI-powered intelligence..."
+                className="w-full bg-white border-2 border-gray-300 rounded-xl px-6 py-4 text-lg text-gray-900 placeholder-gray-500 shadow-sm focus:border-gray-500 focus:outline-none transition-colors"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSearching}
+              className="px-8 py-4 bg-black hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors text-lg min-w-[140px]"
+            >
+              {isSearching ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/30 border-t-white mr-3"></div>
+                  Searching...
+                </div>
+              ) : (
+                'Search'
+              )}
+            </button>
+          </form>
+
+          <div className="text-center">
+            <div className="text-sm text-gray-600 font-light">
+              <p className="mb-2">⚡ AI-powered web search with advanced query optimization</p>
+              <p>🔍 Smart filtering and document analysis for research</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Results */}
+        {searchResults && (
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-10 shadow-sm">
+            <h3 className="text-3xl font-light text-gray-900 mb-6">
+              Found {searchResults.items.length} results - Select documents for your report
+            </h3>
+            
+            {/* Search Info */}
+            <div className="bg-white border border-gray-300 border-l-4 border-l-gray-900 p-6 rounded-xl mb-8">
+              <p className="text-gray-800 mb-4 font-light text-lg">
+                Query: &ldquo;<em>{searchResults.originalQuery}</em>&rdquo; → Google Dork: <code className="bg-gray-100 px-3 py-1 rounded-lg text-sm font-mono">{searchResults.dorkQuery}</code>
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => selectAllResults(true)}
+                  className="px-6 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 transition-colors"
+                >
+                  Select All
+                </button>
+                <button
+                  onClick={() => selectAllResults(false)}
+                  className="px-6 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 transition-colors"
+                >
+                  Deselect All
+                </button>
+              </div>
+            </div>
+
+            {/* Add Sources Section - Moved to top */}
+            <div className="bg-white border border-gray-300 rounded-xl p-8 mb-8">
+              <h3 className="text-xl font-medium text-gray-900 mb-6">Add Your Own Sources</h3>
+              
+              {/* Add URL Source */}
+              <div className="mb-6">
+                <h4 className="text-lg font-medium text-gray-800 mb-4">Add from URL</h4>
+                <div className="flex gap-4">
+                  <input
+                    type="url"
+                    id="sourceUrl"
+                    placeholder="https://example.com/article"
+                    className="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500"
+                  />
+                  <input
+                    type="text"
+                    id="sourceTitle"
+                    placeholder="Optional title"
+                    className="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = (document.getElementById('sourceUrl') as HTMLInputElement).value
+                      const title = (document.getElementById('sourceTitle') as HTMLInputElement).value
+                      if (url) {
+                        addUserSource(url, title)
+                        ;(document.getElementById('sourceUrl') as HTMLInputElement).value = ''
+                        ;(document.getElementById('sourceTitle') as HTMLInputElement).value = ''
+                      }
+                    }}
+                    className="px-6 py-3 bg-black hover:bg-gray-800 text-white rounded-xl transition-colors font-medium"
+                  >
+                    Add Source
+                  </button>
+                </div>
+                
+                {/* User Sources List */}
+                {userSources.length > 0 && (
+                  <div className="mt-6 space-y-3">
+                    <h4 className="text-lg font-medium text-gray-800">Added Sources:</h4>
+                    {userSources.map((source) => (
+                      <div key={source.id} className="flex items-center bg-gray-50 border border-gray-300 rounded-xl p-4">
+                        <input
+                          type="checkbox"
+                          id={`source_${source.id}`}
+                          checked={source.selected !== false}
+                          onChange={(e) => toggleUserSource(source.id, e.target.checked)}
+                          className="w-4 h-4 text-gray-900 cursor-pointer mr-4 rounded"
+                        />
+                        <div className="flex-1 text-left">
+                          <div className="font-medium text-gray-900 mb-1">{source.title}</div>
+                          <div className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer" 
+                               onClick={() => window.open(source.url, '_blank')}>
+                            {source.url}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeUserSource(source.id)}
+                          className="text-gray-500 hover:bg-gray-200 p-2 rounded-lg transition-colors"
+                          title="Remove source"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add Documents Section */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-800 mb-4">Add Documents</h4>
+                <div className="text-center">
+                  <input
+                    type="file"
+                    id="userDocsInput"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt,.md"
+                    onChange={(e) => handleUserDocuments(e.target.files)}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => document.getElementById('userDocsInput')?.click()}
+                    className="inline-flex items-center gap-3 px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-xl transition-colors font-medium"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Add Documents
+                  </button>
+                  
+                  {userDocuments.length > 0 && (
+                    <div className="mt-6 space-y-3">
+                      <h4 className="text-lg font-medium text-gray-800">Uploaded Documents:</h4>
+                      {userDocuments.map((doc) => (
+                        <div key={doc.id} className="flex items-center bg-gray-50 border border-gray-300 rounded-xl p-4">
+                          <input
+                            type="checkbox"
+                            id={`doc_${doc.id}`}
+                            checked={doc.selected !== false}
+                            onChange={(e) => toggleUserDoc(doc.id, e.target.checked)}
+                            className="w-4 h-4 text-gray-900 cursor-pointer mr-4 rounded"
+                          />
+                          <div className="flex-1 text-left">
+                            <span className="font-medium text-gray-900 mr-2">{doc.name}</span>
+                            <span className="text-sm text-gray-500">{doc.size}</span>
+                          </div>
+                          <button
+                            onClick={() => removeUserDoc(doc.id)}
+                            className="text-gray-500 hover:bg-gray-200 p-2 rounded-lg transition-colors"
+                            title="Remove document"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Generate Report Button - Moved to top */}
+            <div className="text-center mb-8">
+              <button
+                onClick={handleGenerateReport}
+                disabled={totalSelected === 0 || isGeneratingReport}
+                className="px-12 py-4 bg-black hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors text-lg"
+              >
+                {isGeneratingReport ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/30 border-t-white mr-3"></div>
+                    Generating Report...
+                  </div>
+                ) : totalSelected === 0 ? (
+                  'Select items to generate report'
+                ) : (
+                  `Generate Report (${totalSelected} items selected)`
+                )}
+              </button>
+            </div>
+
+            {/* Results List with Selection - Now at bottom */}
+            <div className="space-y-4">
+              <h4 className="text-2xl font-light text-gray-900 mb-4">Search Results</h4>
+              {searchResults.items.map((result, index) => (
+                <div key={result.id} className="flex bg-white border border-gray-300 rounded-xl p-6 hover:shadow-md hover:border-gray-400 transition-all duration-300">
+                  <div className="mr-5 pt-1">
+                    <input
+                      type="checkbox"
+                      id={`result_${index}`}
+                      checked={result.selected}
+                      onChange={(e) => toggleResult(index, e.target.checked)}
+                      className="w-5 h-5 text-gray-900 cursor-pointer rounded"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div
+                      className="text-xl font-medium text-gray-900 cursor-pointer hover:text-gray-700 mb-2"
+                      onClick={() => window.open(result.data.link, '_blank')}
+                      title="Click to open in new tab"
+                    >
+                      {result.data.title}
+                    </div>
+                    <div className="text-sm text-gray-600 mb-3">{result.data.formattedUrl || result.data.displayLink}</div>
+                    <div className="text-gray-700 text-base leading-relaxed mb-4 font-light">{result.data.snippet}</div>
+                    <button
+                      onClick={() => window.open(result.data.link, '_blank')}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs text-gray-600 transition-colors font-medium"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <polyline points="15,3 21,3 21,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      Open Link
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <footer className="text-center mt-16 text-gray-500 text-sm font-light">
+          <p>&copy; 2024 DeepFastSearch. Intelligent search for your research.</p>
+        </footer>
+      </div>
     </div>
-  );
-}
+  )
+} 

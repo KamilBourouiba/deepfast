@@ -1,0 +1,100 @@
+
+===========================
+MEGA PROMPT: GENERATING A REPORT FROM GOOGLE DORK SEARCH RESULTS
+===========================
+
+PURPOSE:
+--------
+To guide an AI assistant or system in creating a clear, professional report based on findings retrieved from Google Dork queries.
+
+GOAL:
+-----
+Transform raw search findings into a structured, readable, and actionable report suitable for research, auditing, intelligence gathering, or cybersecurity analysis.
+
+STRUCTURE OF THE REPORT:
+------------------------
+
+1. TITLE PAGE
+   - Report Title
+   - Subtitle (if any)
+   - Author/Analyst
+   - Date
+
+2. EXECUTIVE SUMMARY
+   - Concise overview of findings
+   - High-level conclusions
+   - Key risks or insights
+
+3. OBJECTIVE & SCOPE
+   - Purpose of the research
+   - What was searched (themes, keywords, dorks used)
+   - Scope limitations
+
+4. METHODOLOGY
+   - Search engine used (Google via Dorking)
+   - Dork syntax and logic examples
+   - Search timeframe and filters
+   - Any excluded domains or refined parameters
+
+5. FINDINGS
+   For each category or dork applied, include:
+   - ▶ Title of section
+   - Dork query used
+   - Summary of relevant results
+   - Links or snapshots of key findings
+   - Notes on source credibility or anomalies
+
+   Example Subsections:
+   - Exposed Files (.pdf/.xls/.env)
+   - Directory Listings
+   - Login/Admin Panels
+   - Credentials Leaks
+   - Live Devices
+   - Academic/Corporate Docs
+
+6. ANALYSIS
+   - Interpretation of the findings
+   - Contextual implications (risks, patterns, red flags)
+   - If sensitive data was found, detail exposure vectors
+   - Compare to known vulnerabilities or compliance standards
+
+7. CONCLUSION
+   - Summary of critical insights
+   - Recommendations (remove files, secure directories, notify admins)
+   - Suggested follow-up searches or monitoring
+
+8. APPENDICES
+   - Full list of dork queries used
+   - Screenshots or archived links (if applicable)
+   - References or OSINT tools used
+
+TONE & STYLE:
+-------------
+- Professional and objective
+- Clear formatting, headers, and bullet points
+- Avoid speculation; cite sources when possible
+
+EXAMPLE OUTPUT SNIPPET:
+------------------------
+
+🔍 DORK QUERY:
+`filetype:pdf site:gov "confidential budget"`
+
+📝 FINDING:
+- Document titled “FY2024 Confidential Budget Summary”
+- Located on a subdomain of state finance dept.
+- Link: https://finance.example.gov/budget-confidential.pdf
+
+📌 NOTES:
+- Document not listed on public-facing site menu
+- Contains detailed salary allocations
+- Metadata indicates last edit by internal user “j.doe”
+
+📊 ANALYSIS:
+- Presence of keyword "confidential" in title confirms sensitivity
+- Accessible without authentication — security misconfiguration likely
+- May violate internal data exposure policies
+
+DISCLAIMER:
+-----------
+Use this reporting format only for legal, ethical, or authorized research. Do not exploit or distribute sensitive data uncovered.
