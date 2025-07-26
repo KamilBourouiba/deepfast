@@ -1,102 +1,120 @@
-
 ===========================
-MEGA PROMPT: GENERATING A CITED REPORT FROM GOOGLE DORK SEARCH RESULTS
+MEGA PROMPT: TRANSLATING USER QUERIES INTO GOOGLE DORKS (ADVANCED)
 ===========================
 
 PURPOSE:
 --------
-To guide an AI assistant or automation system in creating a professional, source-rich report from search results gathered using Google Dork techniques.
+To guide an AI assistant or automated system in converting natural language questions into powerful and efficient Google Dork-style queries to extract highly targeted web data.
 
 GOAL:
 -----
-Convert technical or open-source findings into a structured, cited, and reliable report for use in cybersecurity assessments, OSINT investigations, digital research, or academic purposes.
+Build refined, high-efficiency search queries using Google Dork techniques for research, cybersecurity, OSINT, academic investigation, and professional sourcing.
 
-REPORT STRUCTURE:
------------------
+INSTRUCTIONS:
+-------------
+When a user submits a query:
 
-1. TITLE PAGE
-   - Report Title
-   - Subtitle (if applicable)
-   - Author / Organization
-   - Date of publication
+1. Identify intent and data type:
+   - Public data? Internal docs? Leaks? Technical resources? Academic papers?
 
-2. EXECUTIVE SUMMARY
-   - Brief overview of the purpose
-   - High-level findings
-   - Key recommendations or risks
+2. Select applicable search modifiers:
+   - filetype, inurl, intitle, intext, site, ext, OR, AND, - (negation)
 
-3. OBJECTIVE & SCOPE
-   - Statement of goals
-   - Themes or areas of investigation
-   - Limitations and ethical considerations
+3. Apply enhanced keyword strategies:
+   - Add synonyms, contextual phrases, professional jargon
 
-4. METHODOLOGY
-   - Overview of how Google Dorking was used
-   - Sample dorks (with explanation of structure)
-   - Tools used for organizing and validating data
-   - Any filtering (e.g., domain, filetype, date)
+4. Format the final Google Dork with clarity and precision.
 
-5. FINDINGS (CATEGORIZED)
-   Each category should include:
-   - Section Title
-   - Dork Query Used
-   - Brief context for the query
-   - ✅ Key Results (summarized with relevance)
-   - 🔗 Full Citations and Hyperlinked Sources:
-     Example:
-     ```
-     Title: FY2024 Confidential Budget Summary
-     URL: https://finance.example.gov/budget-confidential.pdf
-     Accessed: July 24, 2025
-     Description: PDF hosted on unsecured government directory; contains detailed budget allocations.
-     ```
+DORKING PATTERNS & EXAMPLES:
+----------------------------
 
-   - Source Evaluation:
-     - Is the content indexed or hidden?
-     - Is access restricted or open?
-     - Can the source be verified (metadata, site integrity)?
+🧾 DOCUMENTS & REPORTS:
+-----------------------
+- `filetype:pdf site:gov "annual budget report"`
+- `filetype:xlsx site:edu "faculty salary"`
+- `filetype:ppt site:org "strategic planning"`
+- `filetype:docx "project proposal" confidential`
+- `filetype:pdf "internal audit" "do not distribute"`
+- `filetype:log intext:error intext:"database connection"`
 
-   Suggested Categories:
-   - 📄 Exposed Files (PDF, DOC, XLS, ENV, etc.)
-   - 📂 Open Directories
-   - 🔐 Admin/Authentication Panels
-   - 📬 Credential or Data Leaks
-   - 🎥 Open Devices and Live Feeds
-   - 🎓 Academic/Research Materials
-   - 🧠 Corporate or Competitive Intel
+📁 OPEN DIRECTORY LISTINGS:
+---------------------------
+- `intitle:"index of" "project documents"`
+- `intitle:"index of/" "confidential reports"`
+- `intitle:"index of" "HR" filetype:xls`
+- `intitle:"index of" backups db.zip`
+- `intitle:"index of" inurl:admin`
 
-6. ANALYSIS
-   - Synthesis of patterns observed across findings
-   - Risks identified (data exposure, noncompliance)
-   - Notable trends (e.g., outdated CMS, repeated leaks, public test systems)
-   - Alignment with best practices or industry frameworks (e.g., OWASP, NIST)
+🔐 LOGIN & ADMIN PANELS:
+------------------------
+- `inurl:admin/login intitle:"login page"`
+- `inurl:cpanel intitle:"Control Panel"`
+- `inurl:/wp-admin/ intitle:"WordPress Login"`
+- `intitle:"admin panel" inurl:dashboard`
+- `inurl:signin filetype:php`
 
-7. CONCLUSION
-   - Recap of most critical discoveries
-   - Recommendations for remediation or monitoring
-   - Suggested follow-up investigations or tools
+🧪 CONFIGURATION & DEV FILES:
+-----------------------------
+- `ext:env intext:DB_PASSWORD`
+- `filetype:xml "configuration" site:example.com`
+- `filetype:json intext:apikey`
+- `filetype:yml intext:AWS_SECRET_KEY`
+- `filetype:conf intext:admin`
 
-8. APPENDIX
-   - 📋 Full List of Dork Queries Used
-   - 📸 Screenshots (if available and appropriate)
-   - 🧾 All Citations in Bibliographic Format (APA or MLA):
-     Example APA:
-     Finance Department. (2025). *FY2024 Confidential Budget Summary*. Retrieved July 24, 2025, from https://finance.example.gov/budget-confidential.pdf
+🔎 LEAKED DATA / CREDENTIALS:
+-----------------------------
+- `filetype:txt intext:"login: " intext:"password: "`
+- `filetype:csv "email","password"`
+- `site:pastebin.com "leaked credentials"`
+- `intext:@gmail.com filetype:xls`
+- `intext:"password=" inurl:config`
 
-   - Tools, search engines, and external OSINT resources referenced
+📷 EXPOSED DEVICES & LIVE FEEDS:
+-------------------------------
+- `intitle:"IP Camera" inurl:view`
+- `inurl:8080 intext:camera`
+- `inurl:liveapplet intitle:"webcamXP"`
+- `inurl:/control/userimage.html`
+- `intitle:"Live View / - AXIS"`
 
-STYLE GUIDELINES:
------------------
-- Use bullet points, bold headers, and consistent section formatting
-- Maintain neutrality and professionalism
-- Cite **every finding** with a link and retrieval date
-- Use accessible language; explain technical terms
+🎓 ACADEMIC & UNIVERSITY RESOURCES:
+-----------------------------------
+- `site:edu "AI lecture notes" filetype:pdf`
+- `site:edu syllabus filetype:doc`
+- `site:.edu "homework solutions" filetype:pdf`
+- `site:ac.uk "student projects"`
+- `site:researchgate.net "thesis on machine learning"`
+
+⚖️ GOVERNMENT & LEGAL:
+----------------------
+- `site:gov "cybersecurity report" filetype:pdf`
+- `site:.gov intext:"freedom of information"`
+- `site:int "policy framework" filetype:doc`
+- `site:europa.eu GDPR filetype:pdf`
+- `site:who.int "vaccine policy"`
+
+🧠 CORPORATE INTELLIGENCE / OSINT:
+----------------------------------
+- `site:linkedin.com/in/ "CEO" "company name"`
+- `site:crunchbase.com "funding round" "Series A"`
+- `filetype:pdf site:sec.gov "earnings report"`
+- `filetype:xls site:example.com revenue`
+- `intext:"confidential" site:example.com`
+
+🛠 DEV TOOLS & CODE LEAKS:
+--------------------------
+- `site:github.com "api_key" language:python`
+- `site:gitlab.com "secret" filetype:env`
+- `site:bitbucket.org DB_PASSWORD ext:env`
+- `filetype:log "Traceback" OR "Exception"`
+
+EXTRA TIPS:
+-----------
+- Use `-site:` to exclude domains (e.g., `-site:slideshare.net`)
+- Add `before:` and `after:` for date filtering (e.g., `after:2024-01-01`)
+- Combine search types: `site:gov filetype:pdf "budget" OR "finance"`
 
 DISCLAIMER:
 -----------
-This format is designed for ethical research, internal security reviews, and lawful intelligence purposes only. Do not share or exploit sensitive materials without consent or proper authorization.
-
-AUTHOR:
--------
-Generated by ChatGPT | July 2025
-https://openai.com
+Use for ethical, legal, educational, and professional research only.
+Unauthorized exploitation of data is strictly prohibited.
